@@ -12,4 +12,20 @@ public class ApplicationExceptionHandler {
         Error error = new Error(HttpStatus.BAD_REQUEST, e.getLocalizedMessage());
         return new ResponseEntity<>(error, error.httpStatus());
     }
+    @ExceptionHandler(MeetingNotFoundException.class)
+    public ResponseEntity<Error> handleException(MeetingNotFoundException e) {
+        Error error = new Error(HttpStatus.BAD_REQUEST, e.getLocalizedMessage());
+        return new ResponseEntity<>(error, error.httpStatus());
+    }
+    @ExceptionHandler(IllegalActionException.class)
+    public ResponseEntity<Error> handleException(IllegalActionException e) {
+        Error error = new Error(HttpStatus.BAD_REQUEST, e.getLocalizedMessage());
+        return new ResponseEntity<>(error, error.httpStatus());
+    }
+
+    @ExceptionHandler(MeetingAlreadyExistsException.class)
+    public ResponseEntity<Error> handleException(MeetingAlreadyExistsException e) {
+        Error error = new Error(HttpStatus.BAD_REQUEST, e.getLocalizedMessage());
+        return new ResponseEntity<>(error, error.httpStatus());
+    }
 }

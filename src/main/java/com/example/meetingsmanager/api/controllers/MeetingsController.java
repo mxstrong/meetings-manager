@@ -5,8 +5,7 @@ import com.example.meetingsmanager.api.models.NewMeetingDto;
 import com.example.meetingsmanager.api.models.PersonAndMeetingNameDto;
 import com.example.meetingsmanager.domain.entities.Meeting;
 import com.example.meetingsmanager.domain.repositories.MeetingsRepository;
-import com.example.meetingsmanager.helpers.ConflictingScheduleException;
-import com.example.meetingsmanager.helpers.Mapper;
+import com.example.meetingsmanager.helpers.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,11 +32,8 @@ public class MeetingsController {
     }
 
     @PostMapping("/meetings")
-    public NewMeetingDto newMeeting(@RequestBody Meeting newMeeting) {
+    public NewMeetingDto newMeeting(@RequestBody Meeting newMeeting) throws MeetingAlreadyExistsException {
         Meeting addedMeeting = repository.add(newMeeting);
-        if (addedMeeting == null) {
-            return null;
-        }
         return mapper.toNewMeetingDto(addedMeeting);
     }
 
@@ -47,20 +43,14 @@ public class MeetingsController {
     }
 
     @PostMapping("/meetings/person/add")
-    public MeetingOutDto addPersonToMeeting(@RequestBody PersonAndMeetingNameDto personAndMeetingNameDto) throws ConflictingScheduleException {
+    public MeetingOutDto addPersonToMeeting(@RequestBody PersonAndMeetingNameDto personAndMeetingNameDto) throws ConflictingScheduleException, MeetingNotFoundException {
         Meeting updatedMeeting = repository.addPersonToMeeting(personAndMeetingNameDto.getPerson(), personAndMeetingNameDto.getMeetingName());
-        if (updatedMeeting == null) {
-            return null;
-        }
         return mapper.toMeetingOutDto(updatedMeeting);
     }
 
     @PostMapping("/meetings/person/remove")
-    public MeetingOutDto removePersonFromMeeting(@RequestBody PersonAndMeetingNameDto personAndMeetingNameDto) {
+    public MeetingOutDto removePersonFromMeeting(@RequestBody PersonAndMeetingNameDto personAndMeetingNameDto) throws MeetingNotFoundException, IllegalActionException {
         Meeting updatedMeeting = repository.removePersonFromMeeting(personAndMeetingNameDto.getPerson(), personAndMeetingNameDto.getMeetingName());
-        if (updatedMeeting == null) {
-            return null;
-        }
         return mapper.toMeetingOutDto(updatedMeeting);
     }
 }

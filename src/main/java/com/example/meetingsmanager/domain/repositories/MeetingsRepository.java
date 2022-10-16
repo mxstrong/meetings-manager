@@ -3,6 +3,9 @@ package com.example.meetingsmanager.domain.repositories;
 import com.example.meetingsmanager.domain.entities.Meeting;
 import com.example.meetingsmanager.domain.entities.Person;
 import com.example.meetingsmanager.helpers.ConflictingScheduleException;
+import com.example.meetingsmanager.helpers.IllegalActionException;
+import com.example.meetingsmanager.helpers.MeetingAlreadyExistsException;
+import com.example.meetingsmanager.helpers.MeetingNotFoundException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -51,7 +54,7 @@ public class MeetingsRepository {
         }
     }
 
-    public Meeting add(Meeting meeting) {
+    public Meeting add(Meeting meeting) throws MeetingAlreadyExistsException {
         Random rand = new Random();
         int code = rand.nextInt(10000000, 99999999);
         File dataFile = getDataFile();
@@ -59,7 +62,7 @@ public class MeetingsRepository {
             List<Meeting> meetings = getMeetings(dataFile);
             boolean meetingAlreadyExists = meetings.stream().anyMatch(existingMeeting -> existingMeeting.getName().equals(meeting.getName()));
             if (meetingAlreadyExists) {
-                return null;
+                throw new MeetingAlreadyExistsException("Meeting with the same name as the one you are trying to add already exists");
             }
             meeting.setSecretCode(code);
             List<Person> attendees = new ArrayList<>() {
@@ -69,7 +72,7 @@ public class MeetingsRepository {
             meetings.add(meeting);
             writeMeetingsToFile(dataFile, meetings);
             return meeting;
-        } catch(Exception e) {
+        } catch(IOException e) {
             System.out.println(e.getMessage());
             return null;
         }
@@ -83,18 +86,18 @@ public class MeetingsRepository {
             if (removedSuccessfully) {
                 writeMeetingsToFile(dataFile, meetings);
             }
-        } catch(Exception e) {
+        } catch(IOException e) {
             System.out.println(e.getMessage());
         }
     }
 
-    public Meeting addPersonToMeeting(Person person, String meetingName) throws ConflictingScheduleException {
+    public Meeting addPersonToMeeting(Person person, String meetingName) throws ConflictingScheduleException, MeetingNotFoundException {
         File dataFile = getDataFile();
         try {
             List<Meeting> meetings = getMeetings(dataFile);
             Meeting foundMeeting = meetings.stream().filter(meeting -> Objects.equals(meeting.getName(), meetingName)).findFirst().orElse(null);
             if (foundMeeting == null) {
-                return null;
+                throw new MeetingNotFoundException("Meeting not found");
             }
             List<Person> attendees = foundMeeting.getAttendees();
             boolean alreadyAdded = attendees != null && !attendees.isEmpty() && attendees.stream().anyMatch(attendee -> attendee.getFullName().equals(person.getFullName()));
@@ -117,16 +120,16 @@ public class MeetingsRepository {
         }
     }
 
-    public Meeting removePersonFromMeeting(Person person, String meetingName) {
+    public Meeting removePersonFromMeeting(Person person, String meetingName) throws MeetingNotFoundException, IllegalActionException {
         File dataFile = getDataFile();
         try {
             List<Meeting> meetings = getMeetings(dataFile);
             Meeting foundMeeting = meetings.stream().filter(meeting -> Objects.equals(meeting.getName(), meetingName)).findFirst().orElse(null);
             if (foundMeeting == null) {
-                return null;
+                throw new MeetingNotFoundException("Meeting not found");
             }
             if (foundMeeting.getResponsiblePerson().getFullName().equals(person.getFullName())) {
-                return null;
+                throw new IllegalActionException("It's not allowed to remove responsible person from a meeting");
             }
             List<Person> attendees = foundMeeting.getAttendees();
             attendees.removeIf(attendee -> attendee.getFullName().equals(person.getFullName()));
@@ -135,7 +138,7 @@ public class MeetingsRepository {
             otherMeetings.add(foundMeeting);
             writeMeetingsToFile(dataFile, otherMeetings);
             return foundMeeting;
-        } catch (Exception e) {
+        } catch (IOException e) {
             System.out.println(e.getMessage());
             return null;
         }
